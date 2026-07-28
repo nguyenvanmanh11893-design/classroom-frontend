@@ -1,6 +1,5 @@
 import {
   Refine,
-  GitHubBanner,
   Authenticated,
 } from "@refinedev/core";
 import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
@@ -25,10 +24,9 @@ import { Toaster } from "./components/refine-ui/notification/toaster";
 import { ThemeProvider } from "./components/refine-ui/theme/theme-provider";
 import "./App.css";
 import Dashboard from "@/pages/dashboard.tsx";
-import dashboard from "@/pages/dashboard.tsx";
 import {BookOpen, Home} from "lucide-react";
-import SubjectsList from "@/subjects/list.tsx";
-import Create from "@/subjects/create.tsx";
+import SubjectsList from "@/pages/subjects/list";
+import Create from "@/pages/subjects/create";
 
 function App() {
   // @ts-ignore
