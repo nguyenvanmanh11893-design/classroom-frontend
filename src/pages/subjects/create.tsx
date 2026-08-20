@@ -1,8 +1,7 @@
-import React from 'react'
 
-const SubjectCreate = () => {
+const SubjectsCreate = () => {
     return (
         <div>SubjectCreate</div>
     )
 }
-export default SubjectCreate
+export default SubjectsCreate
