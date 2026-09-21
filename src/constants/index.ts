@@ -65,7 +65,10 @@ const getEnvVar = (key: string): string => {
 
 export const CLOUDINARY_UPLOAD_URL = getEnvVar("VITE_CLOUDINARY_UPLOAD_URL");
 export const CLOUDINARY_CLOUD_NAME = getEnvVar("VITE_CLOUDINARY_CLOUD_NAME");
-const BACKEND_BASE_URL = getEnvVar("VITE_BACKEND_BASE_URL");
+const configuredBackendUrl = getEnvVar("VITE_BACKEND_BASE_URL").replace(/\/+$/, "");
+const BACKEND_BASE_URL = configuredBackendUrl.endsWith("/api")
+    ? `${configuredBackendUrl}/`
+    : `${configuredBackendUrl}/api/`;
 export default BACKEND_BASE_URL
 
 export const BASE_URL =  import.meta.env.VITE_API_URL;
