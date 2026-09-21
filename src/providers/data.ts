@@ -1,5 +1,5 @@
 import {createDataProvider, CreateDataProviderOptions} from "@refinedev/rest"
-import {ListResponse} from "@/types"
+import {CreateResponse, ListResponse} from "@/types"
 import BACKEND_BASE_URL from "@/constants";
 import { HttpError } from "@refinedev/core";
 
@@ -39,6 +39,8 @@ const options: CreateDataProviderOptions ={
         if(resource === 'subjects'){
           if(field === 'department') params.department = value
           if(field ==='name' || field === 'code') params.search = value
+        } else if (resource === 'users' && field === 'role') {
+          params.role = value
         }
       })
       return params
@@ -57,7 +59,18 @@ const options: CreateDataProviderOptions ={
       return payload.pagination?.total  ?? payload.data?.length ?? 0
     }
 
-  }
+  },
+
+  create: {
+    getEndpoint: ({ resource }) => resource,
+
+    buildQueryParams: async ({ variables }) => variables,
+
+    mapResponse: async (response) => {
+      const json: CreateResponse = await response.json()
+      return json.data ?? []
+    }
+  },
 }
 
 const { dataProvider } = createDataProvider(BACKEND_BASE_URL, options)

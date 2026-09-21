@@ -34,8 +34,10 @@ export const classSchema = z.object({
         .min(2, "Class name must be at least 2 characters")
         .max(50, "Class name must be at most 50 characters"),
     description: z
-        .string({ required_error: "Description is required" })
-        .min(5, "Description must be at least 5 characters"),
+        .string()
+        .min(5, "Description must be at least 5 characters")
+        .or(z.literal(""))
+        .optional(),
     subjectId: z.coerce
         .number({
             required_error: "Subject is required",
