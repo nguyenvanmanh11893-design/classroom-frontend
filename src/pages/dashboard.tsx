@@ -1,8 +1,22 @@
 
 
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router';
+import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import BACKEND_BASE_URL from '@/constants';
+import { Button } from '@/components/ui/button';
+import { useI18n } from '@/i18n';
+
+type Data = { summary: { openClasses: number; activeEnrollments: number; capacity: number; utilization: number | null }; charts: { enrollmentTrend: Array<{ date: string; enrolled: number; cancelled: number }>; classesByDepartment: Array<{ name: string; value: number }>; capacityStatus: Array<{ key: string; value: number }>; userDistribution: Array<{ key: string; value: number }> }; activity: Array<{ id: string; type: string; className: string; occurredAt: string }>; legacyUnknownEnrollmentCount: number };
 const Dashboard = () => {
-    return (
-        <div>Dashboard</div>
-    )
-}
-export default Dashboard
+  const { t } = useI18n(); const [params, setParams] = useSearchParams(); const [data, setData] = useState<Data>(); const [error, setError] = useState(false); const [loading, setLoading] = useState(true);
+  const load = async () => { setLoading(true); setError(false); try { const response = await fetch(`${BACKEND_BASE_URL}dashboard?${params}`, { credentials: 'include' }); if (!response.ok) throw new Error(); setData((await response.json()).data); } catch { setError(true); } finally { setLoading(false); } };
+  useEffect(() => { void load(); }, [params.toString()]);
+  const setFilter = (name: string, value: string) => { const next = new URLSearchParams(params); value ? next.set(name, value) : next.delete(name); setParams(next, { replace: true }); };
+  if (loading) return <div className="p-6 animate-pulse" aria-busy="true">{t('dashboard.loading')}</div>;
+  if (error || !data) return <div className="p-6"><p role="alert">{t('dashboard.error')}</p><Button onClick={load}>{t('common.retry')}</Button></div>;
+  const card = (label: string, value: string | number) => <div className="rounded border p-4"><p className="text-sm text-muted-foreground">{label}</p><p className="text-2xl font-semibold">{value}</p></div>;
+  return <main className="p-6 space-y-6"><div className="flex flex-wrap gap-3 items-end"><label>{t('dashboard.from')}<input type="date" value={params.get('from') ?? ''} onChange={e => setFilter('from', e.target.value)} className="ml-2 border rounded p-1" /></label><label>{t('dashboard.to')}<input type="date" value={params.get('to') ?? ''} onChange={e => setFilter('to', e.target.value)} className="ml-2 border rounded p-1" /></label><label>{t('dashboard.semester')}<input type="number" min="1" value={params.get('semesterId') ?? ''} onChange={e => setFilter('semesterId', e.target.value)} className="ml-2 border rounded p-1 w-20" /></label></div><section className="grid grid-cols-1 md:grid-cols-4 gap-4">{card(t('dashboard.openClasses'), data.summary.openClasses)}{card(t('dashboard.activeEnrollments'), data.summary.activeEnrollments)}{card(t('dashboard.capacity'), data.summary.capacity)}{card(t('dashboard.utilization'), data.summary.utilization === null ? t('dashboard.noData') : `${Math.round(data.summary.utilization * 100)}%`)}</section>{data.legacyUnknownEnrollmentCount > 0 && <p className="text-sm text-muted-foreground">{t('dashboard.legacyUnknown', { count: data.legacyUnknownEnrollmentCount })}</p>}<section className="grid grid-cols-1 lg:grid-cols-2 gap-6"><Chart title={t('dashboard.enrollmentTrend')}><LineChart data={data.charts.enrollmentTrend}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="date" /><YAxis /><Tooltip /><Legend /><Line type="monotone" dataKey="enrolled" name={t('dashboard.enrolled')} /><Line type="monotone" dataKey="cancelled" name={t('dashboard.cancelled')} /></LineChart></Chart><Chart title={t('dashboard.classesByDepartment')}><BarChart data={data.charts.classesByDepartment}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="value" name={t('dashboard.classes')} fill="#2563eb" /></BarChart></Chart><Chart title={t('dashboard.capacityStatus')}><BarChart data={data.charts.capacityStatus}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="key" /><YAxis /><Tooltip /><Bar dataKey="value" name={t('dashboard.classes')} fill="#16a34a" /></BarChart></Chart>{data.charts.userDistribution.length > 0 && <Chart title={t('dashboard.userDistribution')}><PieChart><Pie data={data.charts.userDistribution} dataKey="value" nameKey="key" label /><Tooltip /><Legend /></PieChart></Chart>}</section><section><h2 className="text-lg font-semibold">{t('dashboard.activity')}</h2>{data.activity.length ? <ul>{data.activity.map(event => <li key={event.id}>{t(`dashboard.activity.${event.type}`, { className: event.className })} · {new Date(event.occurredAt).toLocaleDateString()}</li>)}</ul> : <p>{t('dashboard.noData')}</p>}</section></main>;
+};
+function Chart({ title, children }: { title: string; children: React.ReactElement }) { return <section className="rounded border p-4"><h2 className="font-semibold mb-3">{title}</h2><div className="h-72"><ResponsiveContainer width="100%" height="100%">{children}</ResponsiveContainer></div></section>; }
+export default Dashboard;

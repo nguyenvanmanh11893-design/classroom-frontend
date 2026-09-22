@@ -1,288 +1,100 @@
-import { Breadcrumb } from "@/components/refine-ui/layout/breadcrumb"
-import { CreateView } from "@/components/refine-ui/views/create-view"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { useBack, useList } from "@refinedev/core"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "@refinedev/react-hook-form"
-import { classSchema } from "@/lib/schema"
-import  * as z from "zod"
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import UploadWidget from "@/components/upload-widget"
-import { Subject, User } from "@/types"
+import { useEffect, useState, type FormEvent } from 'react';
+import { useGetIdentity } from '@refinedev/core';
+import { Link, useNavigate, useParams } from 'react-router';
+import { z } from 'zod';
+import BACKEND_BASE_URL from '@/constants';
+import { classSchema } from '@/lib/schema';
+import { useI18n, translateError } from '@/i18n';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import UploadWidget from '@/components/upload-widget';
 
-const ClassesCreate = () => {
-  const back  = useBack()
-
-  const form = useForm({
-    resolver: zodResolver(classSchema),
-    refineCoreProps: {
-      resource: "classes",
-      action: "create",
-    },
-    defaultValues: {
-      capacity: 50,
-      status: "active",
-      subjectId: undefined,
-      teacherId: "",
-      bannerUrl: "",
-      bannerCldPubId: "",
-    },
-  })
-
-  const {
-    refineCore: { onFinish },
-    handleSubmit, 
-    formState: { isSubmitting, errors },
-    control, 
-} = form
-
-  const onSubmit = async (values: z.infer<typeof classSchema>) => {
-    try {
-      await onFinish(values)
-    } catch (e) {
-      console.error('Error creating new classes', e)
-    }
-  }
-
-  //create teachers 
-  const { query: subjectsQuery } = useList<Subject>({
-    resource: "subjects",
-    pagination: {
-      pageSize: 100,
-    },
-  })
-  const { query: teachersQuery } = useList<User>({
-    resource: "users",
-    filters: [{
-      field: "role",
-      operator: "eq",
-      value: "teacher"
-    }],
-    pagination: {
-      pageSize: 100,
-    },
-  })
-  const subjects = subjectsQuery?.data?.data || []
-  const subjectsLoading = subjectsQuery.isLoading
-
-  const teachers = teachersQuery?.data?.data || []
-  const teachersLoading = teachersQuery.isLoading
-
-  const bannerPublicId = form.watch('bannerCldPubId')
-  const setBannerImage = (file: any,field: any) => {
-    if (file) {
-      field.onChange(file.url)
-      form.setValue('bannerCldPubId', file.publicId, {
-        shouldValidate: true,
-        shouldDirty: true,
-      })
-    }else {
-      field.onChange('')
-      form.setValue('bannerCldPubId', '', {
-        shouldValidate: true,
-        shouldDirty: true,
-      })
-    }
-
-  }
-
-  return (
-    <CreateView className="class-view">
-      <Breadcrumb />
-      <h1 className="page-title">Create a Class</h1>
-      <div className="intro-row">
-        <p>Provide the required information to create a new class.</p>
-        <Button onClick={ back }> Go Back</Button>
-      </div>
-      <Separator />
-      <div className="my-4 flex items-center">
-        <Card className="class-form-card">
-          <CardHeader className="relative z-10">
-            <CardTitle className="text-2xl pb-0 font-bold">
-              Fill out the form
-            </CardTitle>
-          </CardHeader>
-
-          <Separator/>
-
-          <CardContent className="mt-7">
-            <Form {...form}>
-              <form onSubmit={handleSubmit(onSubmit)}
-               className="space-y-5">
-                <FormField control={control}
-                 name="bannerUrl"
-                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Banner Image <span
-                    className="text-orange-600">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <UploadWidget
-                        value={field.value ? { url: field.value, publicId: bannerPublicId ?? '' } : null}
-                        onChange={(file: any) => setBannerImage(file, field)}
-                        />
-                    </FormControl>
-                    <FormMessage />
-                    {errors.bannerCldPubId && !errors.bannerUrl && (
-                      <p className="text-destructive text-sm">{errors.bannerCldPubId.message?.toString()}</p>
-                    )}
-                  </FormItem>
-                )}
-                />
-                
-                <FormField
-                  control={control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Class Name <span
-                    className="text-orange-600">*</span></FormLabel>
-                      <FormControl>
-                        <Input placeholder="Introduction to Biology - Section A" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <FormField
-                  control={control}
-                  name="subjectId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Subject <span
-                    className="text-orange-600">*</span></FormLabel>
-                        <Select onValueChange={( value ) => field.onChange(Number(value))} value={field?.value?.toString()} disabled={subjectsLoading}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select a subject" />
-                            </SelectTrigger>
-                          </FormControl>
-                            <SelectContent>
-                              {subjects.map((subject) => (
-                                <SelectItem key={subject.id} value={subject.id.toString()}>
-                                  {subject.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-
-
-                        </Select>
-                      
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={control}
-                  name="teacherId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Teacher <span
-                    className="text-orange-600">*</span></FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={teachersLoading}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select a teacher" />
-                            </SelectTrigger>
-                          </FormControl>
-                            <SelectContent>
-                              {teachers.map((teacher) => (
-                                <SelectItem key={teacher.id} value={teacher.id.toString()}>
-                                  {teacher.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-
-
-                        </Select>
-                      
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-
-                </div>
-                <FormField
-                  control={control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Describe this class" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <FormField
-                    control={control}
-                    name="capacity"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Capacity <span className="text-orange-600">*</span></FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={1}
-                            {...field}
-                            onChange={(event) => field.onChange(event.target.value)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Status <span className="text-orange-600">*</span></FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select a status" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <Button type="submit">Create Class</Button>
-              </form>
-            </Form>
-          </CardContent>
-
-          
-        </Card>
-      </div>
-
-    </CreateView>
-  )
+type Draft = z.infer<typeof classSchema>;
+type Option = { id: number | string; name: string; isActive?: boolean };
+const initial: Draft = { name: '', description: '', subjectId: 0, semesterId: 0, teacherId: '', capacity: 50, lifecycleStatus: 'draft', schedules: [] };
+async function request(path: string, init?: RequestInit) {
+  const response = await fetch(`${BACKEND_BASE_URL}${path}`, { ...init, credentials: 'include' });
+  const body = await response.json();
+  if (!response.ok) throw new Error(translateError(body.error?.code, body.error?.message));
+  return body;
 }
-
-export default ClassesCreate
+async function options(path: string): Promise<Option[]> {
+  const rows: Option[] = [];
+  for (let page = 1; ; page++) {
+    const body = await request(`${path}${path.includes('?') ? '&' : '?'}page=${page}&pageSize=100&sort=name&order=asc`);
+    rows.push(...body.data);
+    if (page >= (body.pagination?.totalPages ?? 1)) return rows;
+  }
+}
+export default function ClassesCreate() {
+  const { id } = useParams(); const navigate = useNavigate(); const { t } = useI18n();
+  const { data: identity } = useGetIdentity<{ role: string }>();
+  const [draft, setDraft] = useState<Draft>(initial);
+  const [choices, setChoices] = useState<{ subjects: Option[]; semesters: Option[]; teachers: Option[] }>({ subjects: [], semesters: [], teachers: [] });
+  const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
+  const [reload, setReload] = useState(0);
+  useEffect(() => {
+    if (identity?.role !== 'admin') return;
+    let disposed = false; setLoading(true); setError('');
+    Promise.all([options('subjects'), options('semesters'), options('users?role=teacher'), id ? request(`classes/${id}`) : Promise.resolve(null)])
+      .then(([subjects, semesters, teachers, current]) => {
+        if (disposed) return;
+        setChoices({ subjects, semesters, teachers: teachers.filter(row => row.isActive !== false) });
+        if (current) {
+          const row = current.data;
+          setDraft({ name: row.name, description: row.description ?? '', subjectId: row.subjectId, semesterId: row.semesterId ?? 0, teacherId: row.teacherId, capacity: row.capacity, lifecycleStatus: row.lifecycleStatus,
+            ...(row.bannerUrl ? { bannerUrl: row.bannerUrl, bannerCldPubId: row.bannerCldPubId ?? '' } : {}),
+            schedules: row.schedules.map((s: Draft['schedules'][number]) => ({ dayOfWeek: s.dayOfWeek, startTime: s.startTime, endTime: s.endTime })) });
+        } else setDraft(initial);
+      }).catch(e => { if (!disposed) setError(e.message); }).finally(() => { if (!disposed) setLoading(false); });
+    return () => { disposed = true; };
+  }, [id, identity?.role, reload]);
+  const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft(old => ({ ...old, [key]: value }));
+  const submit = async (event: FormEvent) => {
+    event.preventDefault(); setError('');
+    const parsed = classSchema.safeParse(draft);
+    if (!parsed.success) { setError(t('classForm.invalid', { field: parsed.error.issues[0]?.path.join('.') })); return; }
+    setBusy(true);
+    try {
+      const result = await request(id ? `classes/${id}` : 'classes', { method: id ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(parsed.data) });
+      navigate(`/classes/show/${result.data.id}`);
+    } catch (e) { setError(e instanceof Error ? e.message : t('errors.unknown')); }
+    finally { setBusy(false); }
+  };
+  if (!identity || loading && identity.role === 'admin') return <p>{t('common.loading')}</p>;
+  if (identity.role !== 'admin') return <p role="alert">{t('errors.FORBIDDEN')}</p>;
+  const missingOptions = !choices.subjects.length || !choices.semesters.length || !choices.teachers.length;
+  return <main className="mx-auto w-full max-w-3xl space-y-5 p-4">
+    <h1 className="page-title">{t(id ? 'classForm.edit' : 'classForm.create')}</h1>
+    {error && <div role="alert" className="text-destructive">{error} <Button variant="outline" onClick={() => setReload(n => n + 1)}>{t('common.retry')}</Button></div>}
+    {missingOptions && <p>{t('classForm.noOptions')} <Link className="underline" to="/semesters">{t('resources.semesters')}</Link></p>}
+    <form onSubmit={submit} className="space-y-5">
+      <UploadWidget disabled={busy} value={draft.bannerUrl ? { url: draft.bannerUrl, publicId: draft.bannerCldPubId ?? '' } : null}
+        onChange={file => { if (file) setDraft(old => ({ ...old, bannerUrl: file.url, bannerCldPubId: file.publicId })); }} />
+      <label className="block">{t('classForm.name')}<Input required minLength={2} maxLength={255} value={draft.name} onChange={e => set('name', e.target.value)} /></label>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {(['subjectId', 'semesterId', 'teacherId'] as const).map(key => {
+          const rows = key === 'subjectId' ? choices.subjects : key === 'semesterId' ? choices.semesters : choices.teachers;
+          return <label key={key} className="block">{t(`classForm.${key === 'subjectId' ? 'subject' : key === 'semesterId' ? 'semester' : 'teacher'}`)}
+            <select required className="w-full rounded border bg-background p-2" value={draft[key] || ''} onChange={e => key === 'teacherId' ? set(key, e.target.value) : set(key, Number(e.target.value))}>
+              <option value="">{t('classForm.select')}</option>{rows.map(row => <option key={row.id} value={row.id}>{row.name}</option>)}
+            </select></label>;
+        })}
+        <label>{t('classForm.capacity')}<Input type="number" min={1} max={100000} required value={draft.capacity} onChange={e => set('capacity', Number(e.target.value))} /></label>
+        <label>{t('classForm.status')}<select className="w-full rounded border bg-background p-2" value={draft.lifecycleStatus} onChange={e => set('lifecycleStatus', e.target.value as Draft['lifecycleStatus'])}>
+          {(['draft', 'open', 'closed', 'completed', 'cancelled'] as const).map(value => <option key={value} value={value}>{t(`classForm.${value}`)}</option>)}
+        </select></label>
+      </div>
+      <label className="block">{t('classForm.description')}<textarea className="w-full rounded border bg-background p-2" maxLength={5000} value={draft.description} onChange={e => set('description', e.target.value)} /></label>
+      <fieldset className="space-y-3"><legend>{t('classForm.schedules')}</legend>
+        {draft.schedules.map((schedule, index) => <div key={index} className="grid gap-2 rounded border p-3 sm:grid-cols-4">
+          <label>{t('classForm.day')}<Input required type="number" min={1} max={7} value={schedule.dayOfWeek} onChange={e => set('schedules', draft.schedules.map((s, i) => i === index ? { ...s, dayOfWeek: Number(e.target.value) } : s))} /></label>
+          {(['startTime', 'endTime'] as const).map(key => <label key={key}>{t(key === 'startTime' ? 'classForm.start' : 'classForm.end')}<Input required type="time" value={schedule[key]} onChange={e => set('schedules', draft.schedules.map((s, i) => i === index ? { ...s, [key]: e.target.value } : s))} /></label>)}
+          <Button type="button" variant="outline" onClick={() => set('schedules', draft.schedules.filter((_, i) => i !== index))}>{t('classForm.remove')}</Button>
+        </div>)}
+        <Button type="button" variant="outline" disabled={draft.schedules.length >= 14} onClick={() => set('schedules', [...draft.schedules, { dayOfWeek: 1, startTime: '09:00', endTime: '10:00' }])}>{t('classForm.add')}</Button>
+      </fieldset>
+      <div className="flex gap-3"><Button disabled={busy || missingOptions} type="submit">{t('common.save')}</Button><Button asChild variant="outline"><Link to={id ? `/classes/show/${id}` : '/classes'}>{t('common.cancel')}</Link></Button></div>
+    </form>
+  </main>;
+}

@@ -84,7 +84,7 @@ export type User = {
 };
 
 export type Schedule = {
-    day: string;
+    dayOfWeek: number;
     startTime: string;
     endTime: string;
 };
@@ -99,8 +99,10 @@ export type ClassDetails = {
     id: number;
     name: string;
     description: string;
-    status: "active" | "inactive";
+    status: "active" | "inactive" | "archived";
     capacity: number;
+    lifecycleStatus: 'draft' | 'open' | 'closed' | 'completed' | 'cancelled';
+    semesterId: number | null;
     courseCode: string;
     courseName: string;
     bannerUrl?: string;
@@ -110,6 +112,7 @@ export type ClassDetails = {
     department?: Department;
     schedules: Schedule[];
     inviteCode?: string;
+    enrollment?: { status: 'active' | 'cancelled' | null; enabled: boolean };
 };
 
 export type SignUpPayload = {

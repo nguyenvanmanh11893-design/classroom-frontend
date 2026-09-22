@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n";
 
 type DataTablePaginationProps = {
   currentPage: number;
@@ -35,6 +36,7 @@ export function DataTablePagination({
   setPageSize,
   total,
 }: DataTablePaginationProps) {
+  const { t, formatNumber } = useI18n();
   const pageSizeOptions = useMemo(() => {
     const baseOptions = [10, 20, 30, 40, 50];
     const optionsSet = new Set(baseOptions);
@@ -66,11 +68,11 @@ export function DataTablePagination({
           "whitespace-nowrap"
         )}
       >
-        {typeof total === "number" ? `${total} row(s)` : null}
+        {typeof total === "number" ? t('common.rows', { count: total }) : null}
       </div>
       <div className={cn("flex", "items-center", "flex-wrap", "gap-2")}>
         <div className={cn("flex", "items-center", "gap-2")}>
-          <span className={cn("text-sm", "font-medium")}>Rows per page</span>
+          <span className={cn("text-sm", "font-medium")}>{t('common.rowsPerPage')}</span>
           <Select
             value={`${pageSize}`}
             onValueChange={(v) => setPageSize(Number(v))}
@@ -97,7 +99,7 @@ export function DataTablePagination({
               "font-medium"
             )}
           >
-            Page {currentPage} of {pageCount}
+            {t('common.page', { current: formatNumber(currentPage), total: formatNumber(pageCount) })}
           </div>
           <div className={cn("flex", "items-center", "gap-2")}>
             <Button

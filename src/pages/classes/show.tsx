@@ -1,5 +1,8 @@
-import react from 'react'
-import { useShow } from '@refinedev/core'
+import { useGetIdentity, useShow } from '@refinedev/core'
+import { useState } from 'react'
+import { Link } from 'react-router'
+import { useI18n } from '@/i18n'
+import BACKEND_BASE_URL from '@/constants'
 import { ClassDetails } from '@/types'
 import { ShowView, ShowViewHeader } from '@/components/refine-ui/views/show-view'
 import { Card } from '@/components/ui/card'
@@ -9,9 +12,14 @@ import { Button } from '@/components/ui/button'
 import { bannerPhoto } from '@/lib/cloudinary'
 import { AdvancedImage } from '@cloudinary/react'
 const Show = () => {
+  const { t } = useI18n()
   const { query } = useShow<ClassDetails>({ resource: "classes" })
+  const { data: identity } = useGetIdentity<{ id: string; role: string }>()
+  const [inviteCode, setInviteCode] = useState('')
+  const [actionError, setActionError] = useState('')
+  const [busy, setBusy] = useState(false)
 
-  const { classDetails } = query.data?.data
+  const classDetails = query.data?.data
 
   const { isLoading, isError } = query
 
@@ -39,17 +47,34 @@ const Show = () => {
   
   const { name,
       description,
-      status,
+      lifecycleStatus: status,
       capacity,
       bannerUrl,
       bannerCldPubId,
       subject,
       teacher,
       department} = classDetails
+  const activeEnrollment = classDetails.enrollment?.status === 'active'
+  const enrollSelf = async () => {
+    if (!identity || !classDetails.enrollment?.enabled) return
+    setBusy(true); setActionError('')
+    const response = await fetch(`${BACKEND_BASE_URL}classes/${classDetails.id}/enrollments`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId: identity.id, ...(inviteCode ? { inviteCode } : {}) }) })
+    setBusy(false)
+    if (!response.ok) { const payload = await response.json().catch(() => null); setActionError(payload?.error?.message ?? 'Could not join this class.'); return }
+    query.refetch()
+  }
+  const cancelSelf = async () => {
+    if (!identity) return
+    setBusy(true); setActionError('')
+    const response = await fetch(`${BACKEND_BASE_URL}classes/${classDetails.id}/enrollments/${identity.id}`, { method: 'DELETE', credentials: 'include' })
+    setBusy(false)
+    if (!response.ok) { setActionError('Could not cancel enrollment.'); return }; query.refetch()
+  }
   return (
     <ShowView className="class-view class-show">
       <ShowViewHeader resource="classes" title="Class Details"/>
 
+      {identity?.role === 'admin' && <Button asChild variant="outline"><Link to={`/classes/edit/${classDetails.id}`}>{t('classForm.edit')}</Link></Button>}
       <div className="banner">
         {bannerUrl ? (<AdvancedImage alt = "Class Banner" cldImg={bannerPhoto(bannerCldPubId ?? '', name)} />) : <div className="placeholder" />}
       </div>
@@ -62,7 +87,7 @@ const Show = () => {
           </div>
           <div>
             <Badge variant="outline">{capacity}</Badge>
-            <Badge variant={status === "active" ? "default" : "secondary"}
+            <Badge variant={status === "open" ? "default" : "secondary"}
             data-status={status}>
               {status.toUpperCase()}
             </Badge>
@@ -101,17 +126,12 @@ const Show = () => {
         </div>
 
         <Separator/>
-        <div className="join">
+        {classDetails.enrollment?.enabled && <div className="join">
           <h2>Join Class</h2>
-
-          <ol>
-            <li>Ask your teacher for the invite code</li>
-            <li>Click on "Join Class" button</li>
-            <li>Paste the code and click "join"</li>
-          </ol>
-        </div>
-
-        <Button size="lg" className="w-full">Join Class</Button>
+          {!activeEnrollment && <input aria-label="Invite code" value={inviteCode} onChange={event => setInviteCode(event.target.value)} placeholder="Invite code (if required)" className="w-full border rounded p-2" />}
+          {actionError && <p className="text-destructive" role="alert">{actionError}</p>}
+          <Button size="lg" className="w-full" disabled={busy} onClick={activeEnrollment ? cancelSelf : enrollSelf}>{activeEnrollment ? 'Cancel enrollment' : 'Join Class'}</Button>
+        </div>}
       </Card>
       </ShowView>
   )     

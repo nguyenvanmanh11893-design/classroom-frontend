@@ -15,8 +15,11 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n";
+import { LocaleSwitcher } from "@/components/refine-ui/layout/header";
 
 export const ForgotPasswordForm = () => {
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
 
   const Link = useLink();
@@ -53,6 +56,7 @@ export const ForgotPasswordForm = () => {
             {title.icon}
           </div>
         )}
+        <LocaleSwitcher />
       </div>
 
       <Card className={cn("sm:w-[456px]", "p-12", "mt-6")}>
@@ -65,19 +69,19 @@ export const ForgotPasswordForm = () => {
               "font-semibold"
             )}
           >
-            Forgot password
+            {t('auth.forgotPassword')}
           </CardTitle>
           <CardDescription
             className={cn("text-muted-foreground", "font-medium")}
           >
-            Enter your email to change your password.
+            {t('auth.forgotPasswordDescription')}
           </CardDescription>
         </CardHeader>
 
         <CardContent className={cn("px-0")}>
           <form onSubmit={handleForgotPassword}>
             <div className={cn("flex", "flex-col", "gap-2")}>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('auth.email')}</Label>
               <div className={cn("flex", "gap-2")}>
                 <Input
                   id="email"
@@ -97,7 +101,7 @@ export const ForgotPasswordForm = () => {
                     "px-6"
                   )}
                 >
-                  Send
+                  {t('auth.send')}
                 </Button>
               </div>
             </div>
@@ -117,7 +121,7 @@ export const ForgotPasswordForm = () => {
               )}
             >
               <ArrowLeft className={cn("w-4", "h-4")} />
-              <span>Back</span>
+              <span>{t('auth.back')}</span>
             </Link>
           </div>
         </CardContent>

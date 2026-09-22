@@ -14,6 +14,10 @@ import { UserAvatar } from "@/components/refine-ui/layout/user-avatar";
 import { useSidebar, SidebarTrigger } from "@/components/ui/sidebar";
 import { LogOutIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { translate, useI18n } from "@/i18n";
+import { toast } from "sonner";
+import { useEffect, useRef, useState } from "react";
+import BACKEND_BASE_URL from "@/constants";
 
 export const Header = () => {
   const { isMobile } = useSidebar();
@@ -40,7 +44,9 @@ function DesktopHeader() {
         "z-40"
       )}
     >
+      <GlobalSearch />
       <ThemeToggle />
+      <LocaleSwitcher />
       <UserDropdown />
     </header>
   );
@@ -113,11 +119,13 @@ function MobileHeader() {
       </div>
 
       <ThemeToggle className={cn("h-8", "w-8")} />
+      <LocaleSwitcher />
     </header>
   );
 }
 
 const UserDropdown = () => {
+  const { t } = useI18n();
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
 
   const authProvider = useActiveAuthProvider();
@@ -141,13 +149,31 @@ const UserDropdown = () => {
             className={cn("text-destructive", "hover:text-destructive")}
           />
           <span className={cn("text-destructive", "hover:text-destructive")}>
-            {isLoggingOut ? "Logging out..." : "Logout"}
+            {isLoggingOut ? t('common.loggingOut') : t('common.logout')}
           </span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 };
+
+export function LocaleSwitcher() {
+  const { locale, setLocale, t } = useI18n();
+  const change = async (next: 'en' | 'vi') => {
+    if (next === locale) return;
+    try { await setLocale(next); } catch { toast.error(translate(next, 'errors.PREFERENCE_SAVE_FAILED')); }
+  };
+  return <div className="flex rounded-md border" aria-label={t('common.language')}>
+    <button type="button" aria-pressed={locale === 'en'} className="px-2 py-1 text-sm" onClick={() => change('en')}>{t('common.english')}</button>
+    <button type="button" aria-pressed={locale === 'vi'} className="px-2 py-1 text-sm" onClick={() => change('vi')}>{t('common.vietnamese')}</button>
+  </div>;
+}
+
+function GlobalSearch() {
+  const { t } = useI18n(); const [q, setQ] = useState(''); const [rows, setRows] = useState<Array<{ id: string | number; name: string; type: string }>>([]); const latest = useRef(0);
+  useEffect(() => { if (q.trim().length < 2) { setRows([]); return; } const id = ++latest.current; const timer = window.setTimeout(async () => { try { const response = await fetch(`${BACKEND_BASE_URL}search?q=${encodeURIComponent(q.trim())}`, { credentials: 'include' }); if (!response.ok || id !== latest.current) return; setRows((await response.json()).data); } catch { if (id === latest.current) setRows([]); } }, 250); return () => window.clearTimeout(timer); }, [q]);
+  return <div className="relative mr-auto ml-4"><input aria-label={t('dashboard.search')} value={q} onChange={event => setQ(event.target.value)} placeholder={t('dashboard.search')} className="border rounded px-2 py-1 text-sm" />{rows.length > 0 && <ul className="absolute z-50 mt-1 w-72 rounded border bg-background shadow"><>{rows.map(row => <li key={`${row.type}-${row.id}`} className="px-3 py-2 text-sm">{row.name} <span className="text-muted-foreground">{row.type}</span></li>)}</></ul>}</div>;
+}
 
 Header.displayName = "Header";
 MobileHeader.displayName = "MobileHeader";

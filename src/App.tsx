@@ -13,6 +13,7 @@ import routerProvider, {
   DocumentTitleHandler,
 } from "@refinedev/react-router";
 import { dataProvider } from "./providers/data";
+import { accessControlProvider, authProvider } from "./providers/auth";
 import { Login } from "./pages/login";
 import { Register } from "./pages/register";
 import { ForgotPassword } from "./pages/forgot-password";
@@ -22,16 +23,20 @@ import { Header } from "./components/refine-ui/layout/header";
 import { useNotificationProvider } from "./components/refine-ui/notification/use-notification-provider";
 import { Toaster } from "./components/refine-ui/notification/toaster";
 import { ThemeProvider } from "./components/refine-ui/theme/theme-provider";
+import { I18nProvider, useI18n, useRefineI18nProvider, ProfileLocaleSync } from "./i18n";
 import "./App.css";
 import Dashboard from "@/pages/dashboard.tsx";
-import {BookOpen, GraduationCap, Home} from "lucide-react";
+import {BookOpen, GraduationCap, Home, Building2, CalendarDays, Users} from "lucide-react";
+import AdminCrud from '@/pages/admin-crud';
 import SubjectsList from "@/pages/subjects/list";
 import SubjectsCreate from "@/pages/subjects/create";
 import ClassesList from "@/pages/classes/list";
 import ClassesCreate from "@/pages/classes/create";
 import ClassesShow from "@/pages/classes/show";
 
-function App() {
+function RefineApp() {
+  const { t } = useI18n();
+  const i18nProvider = useRefineI18nProvider();
   // @ts-ignore
   return (
     <BrowserRouter>
@@ -40,6 +45,9 @@ function App() {
           <DevtoolsProvider>
             <Refine
               dataProvider={dataProvider}
+              authProvider={authProvider}
+              accessControlProvider={accessControlProvider}
+              i18nProvider={i18nProvider}
               notificationProvider={useNotificationProvider()}
               routerProvider={routerProvider}
               options={{
@@ -51,29 +59,35 @@ function App() {
                 {
                   name: 'dashboard' ,
                   list: '/' ,
-                  meta: { label: 'Home' , icon: <Home/>}
+                  meta: { label: t('resources.dashboard') , icon: <Home/>}
                 },
                 {
                   name: 'subjects' ,
                   list: '/subjects' ,
                   create: '/subjects/create' ,
-                  meta: { label: 'Subjects' , icon: <BookOpen/>}
+                  meta: { label: t('resources.subjects') , icon: <BookOpen/>}
                 },
+                { name: 'departments', list: '/departments', create: '/departments/create', meta: { label: t('resources.departments'), icon: <Building2/> } },
+                { name: 'semesters', list: '/semesters', create: '/semesters/create', meta: { label: t('resources.semesters'), icon: <CalendarDays/> } },
+                { name: 'users', list: '/users', create: '/users/create', meta: { label: t('resources.users'), icon: <Users/> } },
                 {
                   name: 'classes' ,
                   list: '/classes' ,
                   create: '/classes/create' ,
                   show: '/classes/show/:id' ,
-                  meta: { label: 'Classes' , icon: <GraduationCap/>}
+                  edit: '/classes/edit/:id',
+                  meta: { label: t('resources.classes') , icon: <GraduationCap/>}
                 },
               ]}
             >
               <Routes>
                 <Route
                     element={
-                      <Layout>
-                        <Outlet />
-                      </Layout>
+                      <Authenticated key="protected" fallback={<CatchAllNavigate to="/login" />}>
+                        <Layout>
+                          <Outlet />
+                        </Layout>
+                      </Authenticated>
                     }
                 >
                   <Route path="/" element={<Dashboard />} />
@@ -82,17 +96,34 @@ function App() {
                     <Route index element={<SubjectsList />} />
                     <Route path="create" element={<SubjectsCreate />} />
                   </Route>
+                  <Route path="departments" element={<AdminCrud resource="departments" title={t('resources.departments')} />} />
+                  <Route path="semesters" element={<AdminCrud resource="semesters" title={t('resources.semesters')} />} />
+                  <Route path="users" element={<AdminCrud resource="users" title={t('resources.users')} />} />
 
                   <Route path="classes">
                     <Route index element={<ClassesList />} />
                     <Route path="create" element={<ClassesCreate />} />
+                    <Route path="edit/:id" element={<ClassesCreate />} />
                     <Route path="show/:id" element={<ClassesShow />} />
                   </Route>
 
                 </Route>
+                <Route
+                  element={
+                    <Authenticated key="auth-pages" fallback={<Outlet />}>
+                      <NavigateToResource resource="dashboard" />
+                    </Authenticated>
+                  }
+                >
+                  <Route path="login" element={<Login />} />
+                  <Route path="register" element={<Register />} />
+                  <Route path="forgot-password" element={<ForgotPassword />} />
+                </Route>
+                <Route path="*" element={<ErrorComponent />} />
               </Routes>
 
               <Toaster />
+              <ProfileLocaleSync />
               <RefineKbar />
               <UnsavedChangesNotifier />
               <DocumentTitleHandler />
@@ -104,5 +135,7 @@ function App() {
     </BrowserRouter>
   );
 }
+
+function App() { return <I18nProvider><RefineApp /></I18nProvider>; }
 
 export default App;

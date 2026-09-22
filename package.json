@@ -90,7 +90,8 @@
     "dev": "refine dev",
     "build": "refine build",
     "start": "refine start",
-    "refine": "refine"
+    "refine": "refine",
+    "i18n:check": "node scripts/check-i18n-parity.mjs"
   },
   "browserslist": {
     "production": [

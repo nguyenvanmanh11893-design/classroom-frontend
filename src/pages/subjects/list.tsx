@@ -17,12 +17,12 @@ const SubjectsList = () => {
 
     const departmentFilter = selectedDepartment === 'all' ? [] : [
         {
-            field: 'department', operator: 'eq', value: selectedDepartment
+            field: 'department', operator: 'eq' as const, value: selectedDepartment
         }
     ]
 
     const searchFilter = searchQuery ? [
-        { field: 'name', operator: 'contains', value: searchQuery }
+        { field: 'name', operator: 'contains' as const, value: searchQuery }
     ] : []
 
     const subjectsTable = useTable<Subject>({
@@ -106,7 +106,7 @@ const SubjectsList = () => {
                                     All Departments
                                 </SelectItem>
                                 {DEPARTMENT_OPTIONS.map(department => (
-                                    <SelectItem key={department.key} value={department.key}>
+                                    <SelectItem key={department.value} value={department.value}>
                                         {department.label}
                                     </SelectItem>
                                 ))

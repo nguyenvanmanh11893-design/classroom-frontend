@@ -20,8 +20,11 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { InputPassword } from "@/components/refine-ui/form/input-password";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n";
+import { LocaleSwitcher } from "@/components/refine-ui/layout/header";
 
 export const SignInForm = () => {
+  const { t } = useI18n();
   const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -65,7 +68,7 @@ export const SignInForm = () => {
         "min-h-svh"
       )}
     >
-      <div className={cn("flex", "items-center", "justify-center")}>
+      <div className={cn("flex", "items-center", "justify-center", "gap-3")}>
         {title.icon && (
           <div
             className={cn("text-foreground", "[&>svg]:w-12", "[&>svg]:h-12")}
@@ -73,6 +76,7 @@ export const SignInForm = () => {
             {title.icon}
           </div>
         )}
+        <LocaleSwitcher />
       </div>
 
       <Card className={cn("sm:w-[456px]", "p-12", "mt-6")}>
@@ -85,12 +89,12 @@ export const SignInForm = () => {
               "font-semibold"
             )}
           >
-            Sign in
+            {t('auth.signIn')}
           </CardTitle>
           <CardDescription
             className={cn("text-muted-foreground", "font-medium")}
           >
-            Welcome back
+            {t('auth.welcomeBack')}
           </CardDescription>
         </CardHeader>
 
@@ -99,7 +103,7 @@ export const SignInForm = () => {
         <CardContent className={cn("px-0")}>
           <form onSubmit={handleSignIn}>
             <div className={cn("flex", "flex-col", "gap-2")}>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('auth.email')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -112,7 +116,7 @@ export const SignInForm = () => {
             <div
               className={cn("relative", "flex", "flex-col", "gap-2", "mt-6")}
             >
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t('auth.password')}</Label>
               <InputPassword
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -136,7 +140,7 @@ export const SignInForm = () => {
                     setRememberMe(checked === "indeterminate" ? false : checked)
                   }
                 />
-                <Label htmlFor="remember">Remember me</Label>
+                <Label htmlFor="remember">{t('auth.rememberMe')}</Label>
               </div>
               <Link
                 to="/forgot-password"
@@ -150,23 +154,23 @@ export const SignInForm = () => {
                   "dark:text-blue-400"
                 )}
               >
-                <span>Forgot password</span>
+                <span>{t('auth.forgotPassword')}</span>
                 <CircleHelp className={cn("w-4", "h-4")} />
               </Link>
             </div>
 
             <Button type="submit" size="lg" className={cn("w-full", "mt-6")}>
-              Sign in
+              {t('auth.signIn')}
             </Button>
 
             <div className={cn("flex", "items-center", "gap-4", "mt-6")}>
               <Separator className={cn("flex-1")} />
-              <span className={cn("text-sm", "text-muted-foreground")}>or</span>
+              <span className={cn("text-sm", "text-muted-foreground")}>{t('auth.or')}</span>
               <Separator className={cn("flex-1")} />
             </div>
 
             <div className={cn("flex", "flex-col", "gap-4", "mt-6")}>
-              <p className={cn("text-sm", "font-medium")}>Sign in using</p>
+              <p className={cn("text-sm", "font-medium")}>{t('auth.signInUsing')}</p>
               <div className={cn("grid grid-cols-2", "gap-6")}>
                 <Button
                   variant="outline"
@@ -221,7 +225,7 @@ export const SignInForm = () => {
         <CardFooter>
           <div className={cn("w-full", "text-center text-sm")}>
             <span className={cn("text-sm", "text-muted-foreground")}>
-              No account?{" "}
+              {t('auth.noAccount')} {" "}
             </span>
             <Link
               to="/register"
@@ -232,7 +236,7 @@ export const SignInForm = () => {
                 "underline"
               )}
             >
-              Sign up
+              {t('auth.signUp')}
             </Link>
           </div>
         </CardFooter>

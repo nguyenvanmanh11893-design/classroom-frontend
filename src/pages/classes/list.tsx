@@ -61,14 +61,14 @@ const ClassesList = () => {
         ),
       },
       {
-        id: "status",
-        accessorKey: "status",
+        id: "lifecycleStatus",
+        accessorKey: "lifecycleStatus",
         size: 120,
         header: () => <p className="column-title">Status</p>,
         cell: ({ getValue }) => {
-          const status = getValue<ClassDetails["status"]>()
+          const status = getValue<ClassDetails["lifecycleStatus"]>()
           return (
-            <Badge variant={status === "active" ? "default" : "secondary"}>
+            <Badge variant={status === "open" ? "default" : "secondary"}>
               {status}
             </Badge>
           )

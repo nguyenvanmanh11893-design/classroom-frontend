@@ -22,8 +22,12 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { InputPassword } from "@/components/refine-ui/form/input-password";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n";
+import { LocaleSwitcher } from "@/components/refine-ui/layout/header";
 
 export const SignUpForm = () => {
+  const { t } = useI18n();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -42,15 +46,15 @@ export const SignUpForm = () => {
     if (password !== confirmPassword) {
       open?.({
         type: "error",
-        message: "Passwords don't match",
-        description:
-          "Please make sure both password fields contain the same value.",
+        message: t('auth.passwordMismatch'),
+        description: t('auth.passwordMismatchDescription'),
       });
 
       return;
     }
 
     register({
+      name,
       email,
       password,
     });
@@ -88,6 +92,7 @@ export const SignUpForm = () => {
             {title.icon}
           </div>
         )}
+        <LocaleSwitcher />
       </div>
 
       <Card className={cn("sm:w-[456px]", "p-12", "mt-6")}>
@@ -100,12 +105,12 @@ export const SignUpForm = () => {
               "font-semibold"
             )}
           >
-            Sign up
+            {t('auth.signUp')}
           </CardTitle>
           <CardDescription
             className={cn("text-muted-foreground", "font-medium")}
           >
-            Welcome to lorem ipsum dolor.
+            {t('auth.welcome')}
           </CardDescription>
         </CardHeader>
 
@@ -114,7 +119,11 @@ export const SignUpForm = () => {
         <CardContent className={cn("px-0")}>
           <form onSubmit={handleSignUp}>
             <div className={cn("flex", "flex-col", "gap-2")}>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="name">{t('auth.name')}</Label>
+              <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div className={cn("flex", "flex-col", "gap-2")}>
+              <Label htmlFor="email">{t('auth.email')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -128,7 +137,7 @@ export const SignUpForm = () => {
             <div
               className={cn("relative", "flex", "flex-col", "gap-2", "mt-6")}
             >
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t('auth.password')}</Label>
               <InputPassword
                 id="password"
                 value={password}
@@ -140,7 +149,7 @@ export const SignUpForm = () => {
             <div
               className={cn("relative", "flex", "flex-col", "gap-2", "mt-6")}
             >
-              <Label htmlFor="confirmPassword">Confirm password</Label>
+              <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
               <InputPassword
                 id="confirmPassword"
                 value={confirmPassword}
@@ -160,12 +169,12 @@ export const SignUpForm = () => {
                 "text-white"
               )}
             >
-              Sign up
+              {t('auth.signUp')}
             </Button>
 
             <div className={cn("flex", "items-center", "gap-4", "mt-6")}>
               <Separator className={cn("flex-1")} />
-              <span className={cn("text-sm", "text-muted-foreground")}>or</span>
+              <span className={cn("text-sm", "text-muted-foreground")}>{t('auth.or')}</span>
               <Separator className={cn("flex-1")} />
             </div>
 
@@ -223,7 +232,7 @@ export const SignUpForm = () => {
         <CardFooter>
           <div className={cn("w-full", "text-center text-sm")}>
             <span className={cn("text-sm", "text-muted-foreground")}>
-              Have an account?{" "}
+              {t('auth.haveAccount')} {" "}
             </span>
             <Link
               to="/login"
@@ -234,7 +243,7 @@ export const SignUpForm = () => {
                 "underline"
               )}
             >
-              Sign in
+              {t('auth.signIn')}
             </Link>
           </div>
         </CardFooter>
