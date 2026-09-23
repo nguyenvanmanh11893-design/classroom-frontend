@@ -1,189 +1,23 @@
-import { Breadcrumb } from "@/components/refine-ui/layout/breadcrumb"
-import { ListView } from "@/components/refine-ui/views/list-view"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CreateButton } from "@/components/refine-ui/buttons/create"
-import { DataTable } from "@/components/refine-ui/data-table/data-table"
-import { ClassDetails, Subject, User } from "@/types"
-import { useList } from "@refinedev/core"
-import { useTable } from "@refinedev/react-table"
-import { ColumnDef } from "@tanstack/react-table"
-import { Search } from "lucide-react"
-import { useMemo, useState } from "react"
-import { ShowButton } from "@/components/refine-ui/buttons/show"
-
-const ClassesList = () => {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [selectedSubject, setSelectedSubject] = useState("all")
-  const [selectedTeacher, setSelectedTeacher] = useState("all")
-
-  const { query: subjectsQuery } = useList<Subject>({
-    resource: "subjects",
-    pagination: { pageSize: 100 },
-  })
-  const { query: teachersQuery } = useList<User>({
-    resource: "users",
-    filters: [{ field: "role", operator: "eq", value: "teacher" }],
-    pagination: { pageSize: 100 },
-  })
-
-  const subjects = subjectsQuery.data?.data ?? []
-  const teachers = teachersQuery.data?.data ?? []
-
-  const classesTable = useTable<ClassDetails>({
-    columns: useMemo<ColumnDef<ClassDetails>[]>(() => [
-      {
-        id: "bannerUrl",
-        accessorKey: "bannerUrl",
-        size: 100,
-        header: () => <p className="column-title">Banner</p>,
-        cell: ({ getValue }) => {
-          const bannerUrl = getValue<string | undefined>()
-          return bannerUrl ? (
-            <img
-              src={bannerUrl}
-              alt="Class banner"
-              className="h-10 w-16 rounded object-cover"
-            />
-          ) : (
-            <span className="text-muted-foreground">No banner</span>
-          )
-        },
-      },
-      {
-        id: "name",
-        accessorKey: "name",
-        size: 220,
-        header: () => <p className="column-title">Class Name</p>,
-        cell: ({ getValue }) => (
-          <span className="text-foreground">{getValue<string>()}</span>
-        ),
-      },
-      {
-        id: "lifecycleStatus",
-        accessorKey: "lifecycleStatus",
-        size: 120,
-        header: () => <p className="column-title">Status</p>,
-        cell: ({ getValue }) => {
-          const status = getValue<ClassDetails["lifecycleStatus"]>()
-          return (
-            <Badge variant={status === "open" ? "default" : "secondary"}>
-              {status}
-            </Badge>
-          )
-        },
-      },
-      {
-        id: "subject",
-        accessorKey: "subject.name",
-        size: 180,
-        header: () => <p className="column-title">Subject</p>,
-        cell: ({ getValue }) => (
-          <span>{getValue<string | undefined>() ?? "—"}</span>
-        ),
-      },
-      {
-        id: "teacher",
-        accessorKey: "teacher.name",
-        size: 180,
-        header: () => <p className="column-title">Teacher</p>,
-        cell: ({ getValue }) => (
-          <span>{getValue<string | undefined>() ?? "—"}</span>
-        ),
-      },
-      {
-        id: "capacity",
-        accessorKey: "capacity",
-        size: 110,
-        header: () => <p className="column-title">Capacity</p>,
-        cell: ({ getValue }) => <span>{getValue<number>()}</span>,
-      },
-      {
-        id: "details",
-        size: 140,
-        header: () => <p className="column-title">Details</p>,
-        cell: ({ row }) => <ShowButton resource="classes" recordItemId={row.original.id} variant="outline"
-        size="sm">View</ShowButton>
-
-
-      }
-    ], []),
-    refineCoreProps: {
-      resource: "classes",
-      pagination: { pageSize: 10, mode: "server" },
-      filters: {
-        permanent: [
-          ...(searchQuery
-            ? [{ field: "name", operator: "contains" as const, value: searchQuery }]
-            : []),
-          ...(selectedSubject !== "all"
-            ? [{ field: "subject", operator: "eq" as const, value: selectedSubject }]
-            : []),
-          ...(selectedTeacher !== "all"
-            ? [{ field: "teacher", operator: "eq" as const, value: selectedTeacher }]
-            : []),
-        ],
-      },
-      sorters: {
-        initial: [{ field: "id", order: "desc" }],
-      },
-    },
-  })
-
-  return (
-    <ListView>
-      <Breadcrumb />
-      <h1 className="page-title">Classes</h1>
-
-      <div className="intro-row">
-        <p>Quick access to essential class management tools</p>
-        <div className="action-row">
-          <div className="search-field">
-            <Search className="search-icon" />
-            <Input
-              type="text"
-              placeholder="Search by class name..."
-              className="pl-10 w-full"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-            />
-          </div>
-          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by subject" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Subjects</SelectItem>
-                {subjects.map((subject) => (
-                  <SelectItem key={subject.id} value={subject.name}>
-                    {subject.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by teacher" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Teachers</SelectItem>
-                {teachers.map((teacher) => (
-                  <SelectItem key={teacher.id} value={teacher.name}>
-                    {teacher.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <CreateButton resource="classes" />
-          </div>
-        </div>
-      </div>
-
-      <DataTable table={classesTable} />
-    </ListView>
-  )
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
+import { useGetIdentity } from '@refinedev/core';
+import { api, mutation, allOptions } from '@/lib/api';
+import { useI18n } from '@/i18n';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+export default function ClassesList(){
+ const {t}=useI18n();const {data:user}=useGetIdentity<{role:string}>();const [params,setParams]=useSearchParams();const navigate=useNavigate();
+ const [rows,setRows]=useState<any[]>([]),[semesters,setSemesters]=useState<any[]>([]),[departments,setDepartments]=useState<any[]>([]);
+ const [pages,setPages]=useState(1),[total,setTotal]=useState(0),[loading,setLoading]=useState(true),[error,setError]=useState(''),[code,setCode]=useState(''),[busy,setBusy]=useState(false),[revision,setRevision]=useState(0);
+ const page=Math.max(1,Number(params.get('page'))||1);
+ useEffect(()=>{let cancelled=false;Promise.all([allOptions('semesters'),allOptions('departments')]).then(([s,d])=>{if(!cancelled){setSemesters(s);setDepartments(d);}}).catch(e=>{if(!cancelled)setError(e.message);});return()=>{cancelled=true;};},[]);
+ useEffect(()=>{const controller=new AbortController();setLoading(true);setError('');const q=new URLSearchParams(params);q.set('page',String(page));q.set('pageSize','10');api(`classes?${q}`,{signal:controller.signal}).then(result=>{if(!controller.signal.aborted){setRows(result.data);setPages(result.pagination.totalPages);setTotal(result.pagination.total);}}).catch(e=>{if(!controller.signal.aborted)setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});return()=>controller.abort();},[params.toString(),revision]);
+ const filter=(key:string,value:string)=>{const next=new URLSearchParams(params);value?next.set(key,value):next.delete(key);next.set('page','1');setParams(next,{replace:true});};
+ return <main className="mx-auto w-full max-w-6xl space-y-5 p-4"><header className="flex items-center justify-between"><h1 className="page-title">{t('resources.classes')}</h1>{user?.role==='admin'&&<Button asChild><Link to="/classes/create">{t('core.create')}</Link></Button>}</header>
+ {user?.role==='student'&&<form className="flex flex-wrap gap-2 rounded border p-4" onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');try{const result=await mutation('enrollments/join','POST',{code});navigate(`/classes/show/${result.data.classId}`);}catch(e){setError(e instanceof Error?e.message:t('errors.unknown'));}finally{setBusy(false);}}}><Input className="max-w-md" required minLength={20} maxLength={200} aria-label={t('core.inviteCode')} placeholder={t('core.inviteCode')} value={code} onChange={e=>setCode(e.target.value)} /><Button disabled={busy}>{t('core.join')}</Button></form>}
+ <section className="grid gap-3 sm:grid-cols-3"><Input aria-label={t('core.search')} placeholder={t('core.search')} value={params.get('search')??''} onChange={e=>filter('search',e.target.value)}/><select className="rounded border bg-background p-2" aria-label={t('classForm.semester')} value={params.get('semester')??''} onChange={e=>filter('semester',e.target.value)}><option value="">{t('classForm.semester')} · {t('core.all')}</option>{semesters.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select><select className="rounded border bg-background p-2" aria-label={t('core.departmentId')} value={params.get('department')??''} onChange={e=>filter('department',e.target.value)}><option value="">{t('resources.departments')} · {t('core.all')}</option>{departments.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select><select className="rounded border bg-background p-2" aria-label={t('core.status')} value={params.get('status')??''} onChange={e=>filter('status',e.target.value)}><option value="">{t('core.status')} · {t('core.all')}</option>{['draft','open','closed','completed','cancelled'].map(s=><option key={s} value={s}>{t(`classForm.${s}`)}</option>)}</select><Input aria-label={t('classForm.teacher')} placeholder={t('classForm.teacher')} value={params.get('teacher')??''} onChange={e=>filter('teacher',e.target.value)}/><select aria-label={t('core.sort')} className="rounded border bg-background p-2" value={params.get('sort')??'createdAt'} onChange={e=>filter('sort',e.target.value)}>{['createdAt','name','capacity'].map(key=><option key={key} value={key}>{t(`core.${key}`)}</option>)}</select></section>
+ {error&&<p role="alert" className="text-destructive">{error}<Button variant="outline" onClick={()=>setRevision(n=>n+1)}>{t('common.retry')}</Button></p>}
+ {loading?<p>{t('common.loading')}</p>:<div className="overflow-x-auto rounded border"><table className="w-full text-left text-sm"><thead className="bg-muted"><tr>{['name','teacher','status','capacity','actions'].map(key=><th className="p-3" key={key}>{t(`core.${key}`)}</th>)}</tr></thead><tbody>{rows.map(row=><tr className="border-t" key={row.id}><td className="p-3"><strong>{row.name}</strong><p className="text-muted-foreground">{row.subject?.name}</p></td><td className="p-3">{row.teacher?.name}</td><td className="p-3">{t(`classForm.${row.lifecycleStatus}`)}{row.archivedAt&&` · ${t('core.archived')}`}</td><td className="p-3">{row.activeEnrollmentCount}/{row.capacity}{row.activeEnrollmentCount/row.capacity>=.8&&<p className="text-amber-700">{t(row.activeEnrollmentCount>=row.capacity?'core.full':'core.near')}</p>}</td><td className="p-3"><Link className="text-primary underline" to={`/classes/show/${row.id}`}>{t('core.view')}</Link></td></tr>)}</tbody></table>{!rows.length&&<p className="p-4">{t('common.noData')}</p>}</div>}
+ <nav className="flex justify-between items-center gap-3"><Button variant="outline" disabled={page<=1} onClick={()=>{const next=new URLSearchParams(params);next.set('page',String(page-1));setParams(next);}}>{t('core.previous')}</Button><span>{t('core.page',{page,pages:Math.max(1,pages),total})}</span><Button variant="outline" disabled={page>=pages} onClick={()=>{const next=new URLSearchParams(params);next.set('page',String(page+1));setParams(next);}}>{t('core.next')}</Button></nav>
+ </main>;
 }
-
-export default ClassesList

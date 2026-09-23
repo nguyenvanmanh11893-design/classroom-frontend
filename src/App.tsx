@@ -64,12 +64,12 @@ function RefineApp() {
                 {
                   name: 'subjects' ,
                   list: '/subjects' ,
-                  create: '/subjects/create' ,
+                  create: '/subjects/create', show: '/subjects/show/:id', edit: '/subjects/edit/:id',
                   meta: { label: t('resources.subjects') , icon: <BookOpen/>}
                 },
-                { name: 'departments', list: '/departments', create: '/departments/create', meta: { label: t('resources.departments'), icon: <Building2/> } },
-                { name: 'semesters', list: '/semesters', create: '/semesters/create', meta: { label: t('resources.semesters'), icon: <CalendarDays/> } },
-                { name: 'users', list: '/users', create: '/users/create', meta: { label: t('resources.users'), icon: <Users/> } },
+                { name: 'departments', list: '/departments', create: '/departments/create', show: '/departments/show/:id', edit: '/departments/edit/:id', meta: { label: t('resources.departments'), icon: <Building2/> } },
+                { name: 'semesters', list: '/semesters', create: '/semesters/create', show: '/semesters/show/:id', edit: '/semesters/edit/:id', meta: { label: t('resources.semesters'), icon: <CalendarDays/> } },
+                { name: 'users', list: '/users', create: '/users/create', show: '/users/show/:id', edit: '/users/edit/:id', meta: { label: t('resources.users'), icon: <Users/> } },
                 {
                   name: 'classes' ,
                   list: '/classes' ,
@@ -92,13 +92,12 @@ function RefineApp() {
                 >
                   <Route path="/" element={<Dashboard />} />
 
-                  <Route path="subjects">
-                    <Route index element={<SubjectsList />} />
-                    <Route path="create" element={<SubjectsCreate />} />
-                  </Route>
-                  <Route path="departments" element={<AdminCrud resource="departments" title={t('resources.departments')} />} />
-                  <Route path="semesters" element={<AdminCrud resource="semesters" title={t('resources.semesters')} />} />
-                  <Route path="users" element={<AdminCrud resource="users" title={t('resources.users')} />} />
+                  {(['subjects', 'departments', 'semesters', 'users'] as const).map(resource => <Route key={resource} path={resource}>
+                    <Route index element={<AdminCrud resource={resource} />} />
+                    <Route path="create" element={<AdminCrud resource={resource} />} />
+                    <Route path="edit/:id" element={<AdminCrud resource={resource} />} />
+                    <Route path="show/:id" element={<AdminCrud resource={resource} />} />
+                  </Route>)}
 
                   <Route path="classes">
                     <Route index element={<ClassesList />} />
@@ -128,7 +127,7 @@ function RefineApp() {
               <UnsavedChangesNotifier />
               <DocumentTitleHandler />
             </Refine>
-            <DevtoolsPanel />
+            {import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEVTOOLS === "true" && <DevtoolsPanel />}
           </DevtoolsProvider>
         </ThemeProvider>
       </RefineKbarProvider>

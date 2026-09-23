@@ -41,14 +41,14 @@ async function getSession(): Promise<SessionResponse> {
 }
 
 export const authProvider: AuthProvider = {
-  login: async ({ email, password, providerName }) => {
+  login: async ({ email, password, providerName, rememberMe = false }) => {
     if (providerName) return {
       success: false,
       error: { name: 'PROVIDER_NOT_CONFIGURED', message: 'This sign-in provider is not configured', statusCode: 400 },
     };
     const response = await fetch(authUrl('sign-in/email'), {
       method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, rememberMe }),
     });
     if (!response.ok) return { success: false, error: await readError(response, 'Unable to sign in') };
     return { success: true, redirectTo: '/' };

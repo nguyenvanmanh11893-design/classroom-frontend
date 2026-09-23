@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { translate, useI18n } from "@/i18n";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router";
 import BACKEND_BASE_URL from "@/constants";
 
 export const Header = () => {
@@ -118,6 +119,8 @@ function MobileHeader() {
         </h2>
       </div>
 
+      <GlobalSearch />
+      <UserDropdown />
       <ThemeToggle className={cn("h-8", "w-8")} />
       <LocaleSwitcher />
     </header>
@@ -170,9 +173,18 @@ export function LocaleSwitcher() {
 }
 
 function GlobalSearch() {
-  const { t } = useI18n(); const [q, setQ] = useState(''); const [rows, setRows] = useState<Array<{ id: string | number; name: string; type: string }>>([]); const latest = useRef(0);
-  useEffect(() => { if (q.trim().length < 2) { setRows([]); return; } const id = ++latest.current; const timer = window.setTimeout(async () => { try { const response = await fetch(`${BACKEND_BASE_URL}search?q=${encodeURIComponent(q.trim())}`, { credentials: 'include' }); if (!response.ok || id !== latest.current) return; setRows((await response.json()).data); } catch { if (id === latest.current) setRows([]); } }, 250); return () => window.clearTimeout(timer); }, [q]);
-  return <div className="relative mr-auto ml-4"><input aria-label={t('dashboard.search')} value={q} onChange={event => setQ(event.target.value)} placeholder={t('dashboard.search')} className="border rounded px-2 py-1 text-sm" />{rows.length > 0 && <ul className="absolute z-50 mt-1 w-72 rounded border bg-background shadow"><>{rows.map(row => <li key={`${row.type}-${row.id}`} className="px-3 py-2 text-sm">{row.name} <span className="text-muted-foreground">{row.type}</span></li>)}</></ul>}</div>;
+  const { t } = useI18n(); const [q, setQ] = useState(''); const [rows, setRows] = useState<Array<{ id: string | number; name: string; type: string }>>([]); const [error,setError]=useState(false); const [loading,setLoading]=useState(false);
+  useEffect(() => {
+    const controller = new AbortController(); setRows([]); setError(false); setLoading(q.trim().length >= 2);
+    if (q.trim().length < 2) return () => controller.abort();
+    const timer = window.setTimeout(async () => { try {
+      const response = await fetch(`${BACKEND_BASE_URL}search?q=${encodeURIComponent(q.trim())}`, { credentials: 'include', signal: controller.signal });
+      if (!response.ok) throw new Error(); const data=await response.json(); if(!controller.signal.aborted)setRows(data.data);
+    } catch { if(!controller.signal.aborted)setError(true); } finally { if(!controller.signal.aborted)setLoading(false); } }, 250);
+    return () => { controller.abort(); window.clearTimeout(timer); };
+  }, [q]);
+  const resources: Record<string,string> = {class:'classes',subject:'subjects',department:'departments',user:'users'};
+  return <div className="relative mr-auto ml-2 min-w-0"><input aria-label={t('dashboard.search')} value={q} onChange={event => setQ(event.target.value)} onKeyDown={event=>{if(event.key==='Escape')setQ('');}} placeholder={t('dashboard.search')} className="w-full max-w-52 border rounded px-2 py-1 text-sm" />{q.trim().length>=2 && <div className="absolute left-0 z-50 mt-1 w-64 max-w-[85vw] max-h-80 overflow-auto rounded border bg-background shadow">{loading?<p className="p-3">{t('common.loading')}</p>:error?<p role="alert" className="p-3">{t('errors.unknown')}</p>:rows.length?<ul>{rows.map(row => <li key={`${row.type}-${row.id}`}><Link className="block px-3 py-2 text-sm hover:bg-muted focus:bg-muted" to={`/${resources[row.type]}/show/${encodeURIComponent(row.id)}`} onClick={()=>setQ('')}>{row.name} <span className="text-muted-foreground">{t(`resources.${resources[row.type]}`)}</span></Link></li>)}</ul>:<p className="p-3">{t('common.noData')}</p>}</div>}</div>;
 }
 
 Header.displayName = "Header";

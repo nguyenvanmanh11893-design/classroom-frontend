@@ -1,140 +1,21 @@
-import { useGetIdentity, useShow } from '@refinedev/core'
-import { useState } from 'react'
-import { Link } from 'react-router'
-import { useI18n } from '@/i18n'
-import BACKEND_BASE_URL from '@/constants'
-import { ClassDetails } from '@/types'
-import { ShowView, ShowViewHeader } from '@/components/refine-ui/views/show-view'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { Button } from '@/components/ui/button'
-import { bannerPhoto } from '@/lib/cloudinary'
-import { AdvancedImage } from '@cloudinary/react'
-const Show = () => {
-  const { t } = useI18n()
-  const { query } = useShow<ClassDetails>({ resource: "classes" })
-  const { data: identity } = useGetIdentity<{ id: string; role: string }>()
-  const [inviteCode, setInviteCode] = useState('')
-  const [actionError, setActionError] = useState('')
-  const [busy, setBusy] = useState(false)
-
-  const classDetails = query.data?.data
-
-  const { isLoading, isError } = query
-
-  if(isLoading || isError || !classDetails){
-    return (
-      <ShowView className="class-view class-show">
-        <ShowViewHeader resource="classes" title="Class Details"/>
-
-        <p className="state-message">
-          {isLoading ? 'Loading class details...' 
-            : isError ? 'Failed to load class details.' 
-              : 'Class details not found.'}
-        </p>
-      </ShowView>
-    )
-  }
-  const teacherName = classDetails.teacher?.name ?? 'Unknown'
-  const teachersInitials = 
-          teacherName.split(' ')
-          .filter(Boolean)
-          .slice(0, 2)
-          .map((part) => part[0]?.toUpperCase())
-          .join('')
-  const placeholderUrl = `https://placehold.co/600x400?text=${encodeURIComponent(teachersInitials || 'NA')}`
-  
-  const { name,
-      description,
-      lifecycleStatus: status,
-      capacity,
-      bannerUrl,
-      bannerCldPubId,
-      subject,
-      teacher,
-      department} = classDetails
-  const activeEnrollment = classDetails.enrollment?.status === 'active'
-  const enrollSelf = async () => {
-    if (!identity || !classDetails.enrollment?.enabled) return
-    setBusy(true); setActionError('')
-    const response = await fetch(`${BACKEND_BASE_URL}classes/${classDetails.id}/enrollments`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ studentId: identity.id, ...(inviteCode ? { inviteCode } : {}) }) })
-    setBusy(false)
-    if (!response.ok) { const payload = await response.json().catch(() => null); setActionError(payload?.error?.message ?? 'Could not join this class.'); return }
-    query.refetch()
-  }
-  const cancelSelf = async () => {
-    if (!identity) return
-    setBusy(true); setActionError('')
-    const response = await fetch(`${BACKEND_BASE_URL}classes/${classDetails.id}/enrollments/${identity.id}`, { method: 'DELETE', credentials: 'include' })
-    setBusy(false)
-    if (!response.ok) { setActionError('Could not cancel enrollment.'); return }; query.refetch()
-  }
-  return (
-    <ShowView className="class-view class-show">
-      <ShowViewHeader resource="classes" title="Class Details"/>
-
-      {identity?.role === 'admin' && <Button asChild variant="outline"><Link to={`/classes/edit/${classDetails.id}`}>{t('classForm.edit')}</Link></Button>}
-      <div className="banner">
-        {bannerUrl ? (<AdvancedImage alt = "Class Banner" cldImg={bannerPhoto(bannerCldPubId ?? '', name)} />) : <div className="placeholder" />}
-      </div>
-
-      <Card className="details-card">
-        <div className="details-header">
-          <div> 
-            <h1>{name}</h1>
-            <p>{description}</p>
-          </div>
-          <div>
-            <Badge variant="outline">{capacity}</Badge>
-            <Badge variant={status === "open" ? "default" : "secondary"}
-            data-status={status}>
-              {status.toUpperCase()}
-            </Badge>
-          </div>
-        </div>
-        <div className="details-grid">
-          <div className="instructors">
-            <p>Instructors</p>
-            <div>
-              <img src={teacher?.image ?? placeholderUrl}
-              alt={teacherName} />
-              <div>
-                <p>{teacherName}</p>
-                <p>{teacher?.email}</p>
-              </div>
-            </div>
-        </div>
-        <div className="department">
-          <p>Department</p>
-          <div>
-            <p>{department?.name}</p>
-            <p>{department?.description}</p>
-          </div>
-        </div>
-        </div>
-
-        <Separator/>
-
-        <div className="subject">
-          <p>Subject</p>
-          <div>
-            <Badge variant="outline">Code:{subject?.code}</Badge>
-            <p>{subject?.name}</p>
-            <p>{subject?.description}</p>
-          </div>
-        </div>
-
-        <Separator/>
-        {classDetails.enrollment?.enabled && <div className="join">
-          <h2>Join Class</h2>
-          {!activeEnrollment && <input aria-label="Invite code" value={inviteCode} onChange={event => setInviteCode(event.target.value)} placeholder="Invite code (if required)" className="w-full border rounded p-2" />}
-          {actionError && <p className="text-destructive" role="alert">{actionError}</p>}
-          <Button size="lg" className="w-full" disabled={busy} onClick={activeEnrollment ? cancelSelf : enrollSelf}>{activeEnrollment ? 'Cancel enrollment' : 'Join Class'}</Button>
-        </div>}
-      </Card>
-      </ShowView>
-  )     
+import { useGetIdentity, useShow } from '@refinedev/core';
+import { Link } from 'react-router';
+import { useState } from 'react';
+import { useI18n } from '@/i18n';
+import { Button } from '@/components/ui/button';
+import { mutation } from '@/lib/api';
+import EnrollmentPanel from './enrollment-panel';
+export default function ClassesShow() {
+  const { t } = useI18n(); const { query } = useShow<any>({ resource: 'classes' });
+  const { data: user } = useGetIdentity<{id:string;role:string}>(); const [error,setError]=useState(''); const [busy,setBusy]=useState(false);
+  const row=query.data?.data;
+  if(query.isLoading)return <p>{t('common.loading')}</p>;
+  if(query.isError || !row)return <div role="alert">{t('errors.unknown')}<Button onClick={()=>query.refetch()}>{t('common.retry')}</Button></div>;
+  return <main className="mx-auto w-full max-w-5xl space-y-6 p-4"><header className="flex flex-wrap justify-between gap-3"><div><h1 className="page-title">{row.name}</h1><p>{t(`classForm.${row.lifecycleStatus}`)} {row.archivedAt && `· ${t('core.archived')}`}</p></div><div className="flex gap-2"><Button asChild variant="outline"><Link to="/classes">{t('core.back')}</Link></Button>{user?.role==='admin' && <Button asChild><Link to={`/classes/edit/${row.id}`}>{t('core.edit')}</Link></Button>}</div></header>
+    {row.bannerUrl && <img src={row.bannerUrl} alt={row.name} className="max-h-64 w-full rounded object-cover" />}
+    <section className="space-y-3 rounded border p-5"><p>{row.description}</p><dl className="grid gap-4 sm:grid-cols-3">{[['subject',row.subject?.name],['teacher',row.teacher?.name],['semester',row.semesterId ?? '—']].map(([key,value])=><div key={key}><dt className="text-muted-foreground">{t(`classForm.${key}`)}</dt><dd>{value}</dd></div>)}</dl><p>{t('core.occupancy',{count:row.activeEnrollmentCount,capacity:row.capacity})}</p>{row.activeEnrollmentCount/row.capacity>=.8 && <p className="font-semibold text-amber-700">{t(row.activeEnrollmentCount>=row.capacity?'core.full':'core.near')}</p>}<h2 className="font-semibold">{t('classForm.schedules')}</h2>{row.schedules?.length ? <ul>{row.schedules.map((s:any)=><li key={s.id}>{t('core.weekday',{day:s.dayOfWeek})}: {s.startTime}–{s.endTime}</li>)}</ul>:<p>{t('common.noData')}</p>}
+      {error && <p role="alert">{error}</p>}{user?.role==='admin' && !row.archivedAt && <Button variant="outline" disabled={busy} onClick={async()=>{if(!window.confirm(t('core.confirmArchive')))return;setBusy(true);setError('');try{await mutation(`classes/${row.id}`,'PATCH',{archive:true});await query.refetch();}catch(e){setError(e instanceof Error?e.message:t('errors.unknown'));}finally{setBusy(false);}}}>{t('core.archive')}</Button>}
+    </section>
+    {user && <EnrollmentPanel classId={row.id} role={user.role} userId={user.id} enrollment={row.enrollment} refresh={()=>{void query.refetch();}} />}
+  </main>;
 }
-
-export default Show
